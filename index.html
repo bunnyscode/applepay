@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple Pay Demo</title>
+    <script type="text/javascript">
+        // Check if Apple Pay is supported on the current device
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.ApplePaySession && ApplePaySession.canMakePayments()) {
+                document.getElementById('apple-pay-button').style.display = 'block';
+            }
+        });
+
+        function initiateApplePay() {
+            // Create the Apple Pay payment request
+            var paymentRequest = {
+                countryCode: 'US',
+                currencyCode: 'USD',
+                supportedNetworks: ['visa', 'masterCard', 'amex'],
+                merchantCapabilities: ['supports3DS', 'supportsCredit', 'supportsDebit'],
+                total: {
+                    label: 'Demo Shop',
+                    amount: '1.00'
+                }
+            };
+
+            // Create an ApplePaySession
+            var session = new ApplePaySession(3, paymentRequest);
+
+            // Merchant validation
+            session.onvalidatemerchant = function (event) {
+                // Normally, you'd make an API call here to validate the merchant.
+                // Replace 'merchant.example.com' with your actual domain.
+                fetch('https://merchant.example.com/apple-pay-session', {
+                    method: 'POST',
+                    body: JSON.stringify({ validationURL: event.validationURL })
+                }).then(function (response) {
+                    return response.json();
+                }).then(function (merchantSession) {
+                    session.completeMerchantValidation(merchantSession);
+                });
+            };
+
+            // Payment authorized
+            session.onpaymentauthorized = function (event) {
+                // Complete the payment process
+                session.completePayment(ApplePaySession.STATUS_SUCCESS);
+                alert('Payment successful!');
+            };
+
+            // Begin the Apple Pay session
+            session.begin();
+        }
+    </script>
+    <style>
+        #apple-pay-button {
+            display: none; /* Initially hidden if Apple Pay is not available */
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Apple Pay Demo</h1>
+    <button id="apple-pay-button" onclick="initiateApplePay()">Pay with Apple Pay</button>
+</body>
+</html>
